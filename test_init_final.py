@@ -149,8 +149,8 @@ def init():
 		tmp_bossTime.append(datetime.datetime.now()+datetime.timedelta(days=365, hours = int(basicSetting[0])))
 		bossTimeString.append('99:99:99')
 		bossDateString.append('9999-99-99')
-		tmp_bossTimeString.append('')
-		tmp_bossDateString.append('')
+		tmp_bossTimeString.append('99:99:99')
+		tmp_bossDateString.append('9999-99-99')
 		bossFlag.append(False)
 		bossFlag0.append(False)
 		bossMungFlag.append(False)
@@ -221,6 +221,7 @@ async def my_background_task():
 		if channel != '':			
 			#await client.send_message(client.get_channel(channel), 'now : ' + nowDateString + '   ' + nowTimeString + '  end : ' + endDateString + '   ' + endTimeString, tts=False)
 			if endTimeString == nowTimeString and endDateString == nowDateString:
+				await dbSave()
 				await client.send_message(client.get_channel(channel), '<갑자기 인사해도 놀라지마세요!>', tts=False)
 				
 				inidata_restart = repo_restart.get_contents("restart.txt")
@@ -257,6 +258,8 @@ async def my_background_task():
 					#print ('if ', bossTime[i])
 					bossMungFlag[i] = True
 					tmp_bossTime[i] = bossTime[i]
+					tmp_bossTimeString[i] = tmp_bossTime[i].strftime('%H:%M:%S')
+					tmp_bossDateString[i] = tmp_bossTime[i].strftime('%Y-%m-%d')
 					bossTimeString[i] = '99:99:99'
 					bossDateString[i] = '9999-99-99'
 					bossTime[i] = now+datetime.timedelta(days=365)
@@ -352,7 +355,7 @@ async def dbSave():
 						information1 += ' - ' + bossData[i][0] + '(' + bossData[i][1] + '.' + bossData[i][5] + ') : ' + bossTimeString[i] + ' @ ' + bossDateString[i] + ' (미입력 ' + str(bossMungCnt[i]) + '회)' + '\n'
 					else : 
 						information1 += ' - ' + bossData[i][0] + '(' + bossData[i][1] + '.' + bossData[i][5] + ') : ' + bossTimeString[i] + ' @ ' + bossDateString[i] + ' (멍 ' + str(bossMungCnt[i]) + '회)' + '\n'
-	
+
 	contents = repo.get_contents("my_bot.db")
 	repo.update_file(contents.path, "bossDB", information1, contents.sha)
 
@@ -370,7 +373,7 @@ async def dbLoad():
 		for i in range(len(beforeBossData)-1):
 			for j in range(bossNum):
 				if beforeBossData[i+1].find(bossData[j][0]) != -1 :
-					#bossMungCnt[j] = 0
+					tmp_mungcnt = 0
 					#print (str(i) + '   '  + beforeBossData[i+1] + '     ' + bossData[j][0])
 					tmp_len = beforeBossData[i+1].find(':')
 					tmp_datelen = beforeBossData[i+1].find('@')
@@ -393,12 +396,13 @@ async def dbLoad():
 						deltaTime = datetime.timedelta(hours = int(bossData[j][1]), minutes = int(bossData[j][5]))
 						while now2 > tmp_now :
 							tmp_now = tmp_now + deltaTime
+							tmp_mungcnt = tmp_mungcnt + 1
 					
 					now2 = tmp_now
 
 					tmp_bossTime[j] = bossTime[j] = now2
-					bossTimeString[j] = bossTime[j].strftime('%H:%M:%S')
-					bossDateString[j] = bossTime[j].strftime('%Y-%m-%d')
+					tmp_bossTimeString[j] = bossTimeString[j] = bossTime[j].strftime('%H:%M:%S')
+					tmp_bossDateString[j] = bossDateString[j] = bossTime[j].strftime('%Y-%m-%d')
 					
 					#print (bossData[j][0] + '  ' + bossTimeString[j] + '  ' + bossDateString[j])
 
@@ -406,7 +410,7 @@ async def dbLoad():
 					#print (len(beforeBossData[i+1]))
 					#print (beforeBossData[i+1][len(beforeBossData[i+1])-3:len(beforeBossData[i+1])-2])
 					if beforeBossData[i+1][len(beforeBossData[i+1])-3:len(beforeBossData[i+1])-2] != 0 :
-						bossMungCnt[j] = int(beforeBossData[i+1][len(beforeBossData[i+1])-3:len(beforeBossData[i+1])-2])
+						bossMungCnt[j] = int(beforeBossData[i+1][len(beforeBossData[i+1])-3:len(beforeBossData[i+1])-2]) + tmp_mungcnt
 						#print (bossMungCnt)
 					else:
 						bossMungCnt[j] = 0
@@ -653,10 +657,7 @@ async def on_message(msg):
 							
 				tmp_bossTime[i] = bossTime[i] = nextTime = now2
 				tmp_bossTimeString[i] = bossTimeString[i] = nextTime.strftime('%H:%M:%S')
-				#print (tmp_bossTimeString[i])
 				tmp_bossDateString[i] = bossDateString[i] = nextTime.strftime('%Y-%m-%d')
-				#print (tmp_bossDateString[i])
-				#await client.send_message(channel, '다음 '+ bossData[i][0] + ' ' + bossTimeString[i] + '입니다.', tts=False)
 				embed = discord.Embed(
 						description= '다음 ' + bossData[i][0] + ' ' + bossTimeString[i] + '입니다.',
 						color=0xff0000
@@ -740,10 +741,7 @@ async def on_message(msg):
 
 					tmp_bossTime[i] = bossTime[i] = nextTime = tmp_now
 					tmp_bossTimeString[i] = bossTimeString[i] = nextTime.strftime('%H:%M:%S')
-					#print (tmp_bossTimeString[i])
 					tmp_bossDateString[i] = bossDateString[i] = nextTime.strftime('%Y-%m-%d')
-					#print (tmp_bossDateString[i])
-					#await client.send_message(channel, '다음 '+ bossData[i][0] + ' ' + bossTimeString[i] + '입니다.', tts=False)
 					embed = discord.Embed(
 							description= '다음 ' + bossData[i][0] + ' ' + bossTimeString[i] + '입니다.',
 							color=0xff0000
@@ -760,8 +758,8 @@ async def on_message(msg):
 				tmp_bossTime[i] =  datetime.datetime.now()+datetime.timedelta(days=365, hours = int(basicSetting[0]))
 				bossTimeString[i] = '99:99:99'
 				bossDateString[i] = '9999-99-99'
-				tmp_bossTimeString[i] = ''
-				tmp_bossDateString[i] = ''
+				tmp_bossTimeString[i] = '99:99:99'
+				tmp_bossDateString[i] = '9999-99-99'
 				bossFlag[i] = (False)
 				bossFlag0[i] = (False)
 				bossMungFlag[i] = (False)
@@ -811,7 +809,7 @@ async def on_message(msg):
 		if message.content.startswith('!메뉴'):
 			embed = discord.Embed(
 					title = "----- 메뉴 -----",
-					description= '!채널확인\n!채널이동 [채널명]\n!소환\n!불러오기\n!초기화\n!명치\n!미예약\n!분배 [인원] [금액]\n!사다리 [뽑을인원수] [아이디1] [아이디2] ...\n!보스일괄 00:00 또는 !보스일괄 0000\n!ㅂ,ㅃ,q\n\n[보스명]컷\n[보스명]컷 00:00 또는 [보스명]컷 0000\n[보스명]멍\n[보스명]멍 00:00 또는 [보스명]멍 0000\n[보스명]삭제\n보스탐',
+					description= '!채널확인\n!채널이동 [채널명]\n!소환\n!불러오기\n!초기화\n!명치\n!미예약\n!분배 [인원] [금액]\n!사다리 [뽑을인원수] [아이디1] [아이디2] ...\n!보스일괄 00:00 또는 !보스일괄 0000\n!ㅂ,ㅃ,q\n\n[보스명]컷\n[보스명]컷 00:00 또는 [보스명]컷 0000\n[보스명]멍\n[보스명]멍 00:00 또는 [보스명]멍 0000\n[보스명]예상 00:00 또는 [보스명]예상 0000\n[보스명]삭제\n보스탐',
 					color=0xff00ff
 					)
 			await client.send_message(client.get_channel(channel), embed=embed, tts=False)
@@ -843,6 +841,7 @@ async def on_message(msg):
 		##################################
 
 		if message.content.startswith('!명치'):
+			await dbSave()
 			await client.send_message(client.get_channel(channel), '<명치 맞고 숨고르는 중... 갑자기 인사해도 놀라지마세요!>', tts=False)
 
 			inidata_restart = repo_restart.get_contents("restart.txt")
@@ -975,7 +974,7 @@ async def on_message(msg):
 				else :
 					now2 = now2 + datetime.timedelta(hours = int(bossData[i][1]), minutes = int(bossData[i][5]))
 							
-				bossTime[i] = nextTime = now2
+				tmp_bossTime[i] = bossTime[i] = nextTime = now2
 				tmp_bossTimeString[i] = bossTimeString[i] = nextTime.strftime('%H:%M:%S')
 				tmp_bossDateString[i] = bossDateString[i] = nextTime.strftime('%Y-%m-%d')
 
