@@ -6,6 +6,7 @@ import asyncio
 import discord
 import datetime
 import random
+import math
 from discord.ext import commands
 from gtts import gTTS
 from github import Github
@@ -787,9 +788,9 @@ async def on_message(msg):
 			separate_money = []
 			separate_money = message.content[4:].split(" ")
 			num_sep = int(separate_money[0])
-			cal_tax1 = int(float(separate_money[1])*0.05)
+			cal_tax1 = math.ceil(float(separate_money[1])*0.05)
 			real_money = int(int(separate_money[1]) - cal_tax1)
-			cal_tax2 = int(real_money/num_sep) - int(float(int(real_money/num_sep))*0.95)
+			cal_tax2 = int(real_money/num_sep) - math.ceil(float(int(real_money/num_sep))*0.95)
 			if num_sep == 0 :
 				await client.send_message(client.get_channel(channel), '```분배 인원이 0입니다. 재입력 해주세요.```', tts=False)
 			else :
