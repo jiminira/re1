@@ -17,8 +17,10 @@ if not discord.opus.is_loaded():
 
 basicSetting = []
 bossData = []
+fixed_bossData = []
 
 bossNum = 0
+fixed_bossNum = 0
 chkvoicechannel = 0
 chkrelogin = 0
 chflg = 0
@@ -26,6 +28,8 @@ LoadChk = 0
 
 bossTime = []
 tmp_bossTime = []
+
+fixed_bossTime = []
 
 bossTimeString = []
 bossDateString = []
@@ -59,13 +63,17 @@ repo_restart = g.get_repo(git_access_repo_restart)
 def init():
 	global basicSetting
 	global bossData
+	global fixed_bossData
 
 	global bossNum
+	global fixed_bossNum
 	global chkvoicechannel
 	global chkrelogin
 
 	global bossTime
 	global tmp_bossTime
+
+	global fixed_bossTime
 
 	global bossTimeString
 	global bossDateString
@@ -90,7 +98,9 @@ def init():
 	global channel_type
 	
 	tmp_bossData = []
+	tmp_fixed_bossData = []
 	f = []
+	fb = []
 	#print("test")
 	
 	inidata = repo.get_contents("test_setting.ini")
@@ -98,8 +108,16 @@ def init():
 	file_data1 = file_data1.decode('utf-8')
 	inputData = file_data1.split('\n')
 
+	fixed_inidata = repo.get_contents("fixed_boss.ini")
+	file_data2 = base64.b64decode(fixed_inidata.content)
+	file_data2 = file_data2.decode('utf-8')
+	fixed_inputData = file_data2.split('\n')
+
 	for i in range(inputData.count('\r')):
 		inputData.remove('\r')
+
+	for i in range(fixed_inputData.count('\r')):
+		fixed_inputData.remove('\r')
 
 	basicSetting.append(inputData[0][11:])   #timezone
 	basicSetting.append(inputData[4][15:])   #before_alert
@@ -117,17 +135,26 @@ def init():
 	#print (inputData, len(inputData))
 	
 	bossNum = int((len(inputData)-7)/5)
+
+	fixed_bossNum = int(len(fixed_inputData)/4) 
 	
 	#print (bossNum)
 	
 	for i in range(bossNum):
 		tmp_bossData.append(inputData[i*5+7:i*5+12])
+
+	for i in range(fixed_bossNum):
+		tmp_fixed_bossData.append(fixed_inputData[i*4:i*4+4]) #카톡
 		
 	#print (tmp_bossData)
 		
 	for j in range(bossNum):
 		for i in range(len(tmp_bossData[j])):
 			tmp_bossData[j][i] = tmp_bossData[j][i].strip()
+
+	for j in range(fixed_bossNum):
+		for i in range(len(tmp_fixed_bossData[j])):
+			tmp_fixed_bossData[j][i] = tmp_fixed_bossData[j][i].strip()
 	
 	for j in range(bossNum):
 		tmp_len = tmp_bossData[j][1].find(':')
@@ -137,8 +164,21 @@ def init():
 		f.append(tmp_bossData[j][3][20:])         #3 : 분전 알림멘트
 		f.append(tmp_bossData[j][4][13:])         #4 : 젠 알림멘트
 		f.append(tmp_bossData[j][1][tmp_len+1:])  #5 : 분
+		f.append('')                              #6 : 메세지
 		bossData.append(f)
 		f = []
+
+	for j in range(fixed_bossNum):
+		tmp_fixed_len = tmp_fixed_bossData[j][1].find(':')
+		fb.append(tmp_fixed_bossData[j][0][11:])               #0 : 보스명
+		fb.append(tmp_fixed_bossData[j][1][11:tmp_fixed_len])  #1 : 시
+		fb.append(tmp_fixed_bossData[j][1][tmp_fixed_len+1:])  #2 : 분
+		fb.append(tmp_fixed_bossData[j][2][20:])               #3 : 분전 알림멘트
+		fb.append(tmp_fixed_bossData[j][3][13:])               #4 : 젠 알림멘트
+		fixed_bossData.append(fb)
+		fb = []
+		
+	#print (fixed_bossData)
 
 	print ('보탐봇 재시작 시간 : ', basicSetting[4], '시 ', basicSetting[5], '분')
 	print ('보스젠알림시간1 : ', basicSetting[1])
@@ -156,6 +196,15 @@ def init():
 		bossFlag0.append(False)
 		bossMungFlag.append(False)
 		bossMungCnt.append(0)
+		
+	tmp_fixed_now = datetime.datetime.now() + datetime.timedelta(hours = int(basicSetting[0]))
+		
+	for i in range(fixed_bossNum):
+		fixed_bossTime.append(tmp_fixed_now.replace(hour=int(fixed_bossData[i][1]), minute=int(fixed_bossData[i][2]), second = int(0)))
+
+	for i in range(fixed_bossNum):
+		if fixed_bossTime[i] < tmp_fixed_now :
+			fixed_bossTime[i] = fixed_bossTime[i] + datetime.timedelta(days=int(1))
 		
 	#inidata.close()
 
@@ -177,13 +226,17 @@ async def my_background_task():
 		
 	global basicSetting
 	global bossData
+	global fixed_bossData
 
 	global bossNum
+	global fixed_bossNum
 	global chkvoicechannel
 	global chkrelogin
 
 	global bossTime
 	global tmp_bossTime
+	
+	global fixed_bossTime
 
 	global bossTimeString
 	global bossDateString
@@ -239,7 +292,19 @@ async def my_background_task():
 					repo_restart.update_file(contents12.path, "restart_1", "", contents12.sha)
 					
 				endTime = endTime + datetime.timedelta(days = 1)
+				
+			
+			for i in range(fixed_bossNum):
+				if fixed_bossTime[i] <= now :
+					fixed_bossTime[i] = now+datetime.timedelta(days=int(1))
+					embed = discord.Embed(
+							description= "```" + fixed_bossData[i][0] + '탐 ' + fixed_bossData[i][4] + "```" ,
+							color=0x00ff00
+							)
+					await client.send_message(client.get_channel(channel), embed=embed, tts=False)
+					await PlaySound(voice_client1, './sound/' + fixed_bossData[i][0] + '젠.mp3')
 
+				
 			for i in range(bossNum):
 				#print (bossData[i][0], bossTime[i])
 				if bossTime[i] <= priv0 and bossTime[i] > priv:
@@ -354,10 +419,10 @@ async def dbSave():
 			if timestring == bossTime[i]:
 				if bossTimeString[i] != '99:99:99' :
 					if bossData[i][2] == '0' :
-						information1 += ' - ' + bossData[i][0] + '(' + bossData[i][1] + '.' + bossData[i][5] + ') : ' + bossTimeString[i] + ' @ ' + bossDateString[i] + ' (미입력 ' + str(bossMungCnt[i]) + '회)' + '\n'
+						information1 += ' - ' + bossData[i][0] + '(' + bossData[i][1] + '.' + bossData[i][5] + ') : ' + bossTimeString[i] + ' @ ' + bossDateString[i] + ' (미입력 ' + str(bossMungCnt[i]) + '회)' + ' * ' + bossData[i][6] + '\n'
 					else : 
-						information1 += ' - ' + bossData[i][0] + '(' + bossData[i][1] + '.' + bossData[i][5] + ') : ' + bossTimeString[i] + ' @ ' + bossDateString[i] + ' (멍 ' + str(bossMungCnt[i]) + '회)' + '\n'
-
+						information1 += ' - ' + bossData[i][0] + '(' + bossData[i][1] + '.' + bossData[i][5] + ') : ' + bossTimeString[i] + ' @ ' + bossDateString[i] + ' (멍 ' + str(bossMungCnt[i]) + '회)' + ' * ' + bossData[i][6] + '\n'
+						
 	contents = repo.get_contents("my_bot.db")
 	repo.update_file(contents.path, "bossDB", information1, contents.sha)
 
@@ -378,6 +443,7 @@ async def dbLoad():
 					tmp_mungcnt = 0
 					tmp_len = beforeBossData[i+1].find(':')
 					tmp_datelen = beforeBossData[i+1].find('@')
+					tmp_msglen = beforeBossData[i+1].find('*')
 
 					
 					years1 = beforeBossData[i+1][tmp_datelen+2:tmp_datelen+6]
@@ -405,10 +471,12 @@ async def dbLoad():
 					tmp_bossTimeString[j] = bossTimeString[j] = bossTime[j].strftime('%H:%M:%S')
 					tmp_bossDateString[j] = bossDateString[j] = bossTime[j].strftime('%Y-%m-%d')
 					
-					if beforeBossData[i+1][len(beforeBossData[i+1])-3:len(beforeBossData[i+1])-2] != 0 and beforeBossData[i+1][len(beforeBossData[i+1])-4:len(beforeBossData[i+1])-3] == ' ':
-						bossMungCnt[j] = int(beforeBossData[i+1][len(beforeBossData[i+1])-3:len(beforeBossData[i+1])-2]) + tmp_mungcnt
-					elif beforeBossData[i+1][len(beforeBossData[i+1])-4:len(beforeBossData[i+1])-3] != ' ':
-						bossMungCnt[j] = int(beforeBossData[i+1][len(beforeBossData[i+1])-4:len(beforeBossData[i+1])-3] + beforeBossData[i+1][len(beforeBossData[i+1])-3:len(beforeBossData[i+1])-2]) + tmp_mungcnt
+					bossData[j][6] = beforeBossData[i+1][tmp_msglen+2:len(beforeBossData[i+1])]
+
+					if beforeBossData[i+1][tmp_msglen-4:tmp_msglen-3] != 0 and beforeBossData[i+1][tmp_msglen-5:tmp_msglen-4] == ' ':
+						bossMungCnt[j] = int(beforeBossData[i+1][tmp_msglen-4:tmp_msglen-3]) + tmp_mungcnt
+					elif beforeBossData[i+1][tmp_msglen-5:tmp_msglen-4] != ' ':
+						bossMungCnt[j] = int(beforeBossData[i+1][tmp_msglen-5:tmp_msglen-4] + beforeBossData[i+1][tmp_msglen-4:tmp_msglen-3]) + tmp_mungcnt
 					else:
 						bossMungCnt[j] = 0
 		LoadChk = 0
@@ -505,13 +573,17 @@ async def on_message(msg):
 	
 	global basicSetting
 	global bossData
+	global fixed_bossData
 
 	global bossNum
+	global fixed_bossNum
 	global chkvoicechannel
 	global chkrelogin
 
 	global bossTime
 	global tmp_bossTime
+
+	global fixed_bossTime
 
 	global bossTimeString
 	global bossDateString
@@ -616,6 +688,12 @@ async def on_message(msg):
 
 		for i in range(bossNum):
 			if message.content.startswith(bossData[i][0] +'컷'):
+				if hello.find('  ') != -1 :
+					bossData[i][6] = hello[hello.find('  ')+2:]
+					hello = hello[:hello.find('  ')]
+				else:
+					bossData[i][6] = ''
+					
 				tmp_msg = bossData[i][0] +'컷'
 				if len(hello) > len(tmp_msg) + 3 :
 					if hello.find(':') != -1 :
@@ -667,6 +745,12 @@ async def on_message(msg):
 		##################################
 
 			if message.content.startswith(bossData[i][0] +'멍'):
+				if hello.find('  ') != -1 :
+					bossData[i][6] = hello[hello.find('  ')+2:]
+					hello = hello[:hello.find('  ')]
+				else:
+					bossData[i][6] = ''
+					
 				tmp_msg = bossData[i][0] +'멍'
 				tmp_now = datetime.datetime.now() + datetime.timedelta(hours = int(basicSetting[0]))
 				if tmp_bossTime[i] != bossTime[i]:
@@ -718,6 +802,12 @@ async def on_message(msg):
 
 		for i in range(bossNum):
 			if message.content.startswith(bossData[i][0] +'예상'):
+				if hello.find('  ') != -1 :
+					bossData[i][6] = hello[hello.find('  ')+2:]
+					hello = hello[:hello.find('  ')]
+				else:
+					bossData[i][6] = ''
+					
 				tmp_msg = bossData[i][0] +'예상'
 				if len(hello) > len(tmp_msg) + 3 :
 					if hello.find(':') != -1 :
@@ -932,6 +1022,8 @@ async def on_message(msg):
 			bossTime = []
 			tmp_bossTime = []
 
+			fixed_bossTime = []
+
 			bossTimeString = []
 			bossDateString = []
 			tmp_bossTimeString = []
@@ -1086,6 +1178,13 @@ async def on_message(msg):
 			#print ('datelist', len(datelist))
 			#print ('bosslist', len(bossTime))
 			#print ('bossdata', len(bossData))
+			
+			fixed_information = ''
+			for i in range(fixed_bossNum):
+					tmp_timeSTR = fixed_bossTime[i].strftime('%H:%M:%S')
+					fixed_information += fixed_bossData[i][0] + ' : ' + tmp_timeSTR + '\n'
+
+			fixed_information = '```' + fixed_information + '```'
 
 			temp_bossTime1 = []
 			for i in range(bossNum):
@@ -1106,14 +1205,14 @@ async def on_message(msg):
 						if bossTimeString[i] != '99:99:99' :
 							if bossData[i][2] == '0' :
 								if bossMungCnt[i] == 0 :
-									information += bossData[i][0] + '(' + bossData[i][1] + '.' + bossData[i][5] + ') : ' + bossTimeString[i] + '\n'
+									information += bossData[i][0] + ' : ' + bossTimeString[i] + ' ' + bossData[i][6] + '\n'
 								else :
-									information +=  bossData[i][0] + '(' + bossData[i][1] + '.' + bossData[i][5] + ') : ' + bossTimeString[i] + ' (미입력 ' + str(bossMungCnt[i]) + '회)' + '\n'
+									information += bossData[i][0] + ' : ' + bossTimeString[i] + ' (미 ' + str(bossMungCnt[i]) + '회)' + ' ' + bossData[i][6] + '\n'
 							else : 
 								if bossMungCnt[i] == 0 :
-									information +=  bossData[i][0] + '(' + bossData[i][1] + '.' + bossData[i][5] + ') : ' + bossTimeString[i] + '\n'
+									information += bossData[i][0] + ' : ' + bossTimeString[i] + ' ' + bossData[i][6] + '\n'
 								else :
-									information +=  bossData[i][0] + '(' + bossData[i][1] + '.' + bossData[i][5] + ') : ' + bossTimeString[i] + ' (멍 ' + str(bossMungCnt[i]) + '회)' + '\n'
+									information += bossData[i][0] + ' : ' + bossTimeString[i] + ' (멍 ' + str(bossMungCnt[i]) + '회)' + ' ' + bossData[i][6] + '\n'
 									
 			if len(information) != 0:
 				information = "```" + information + "```"
@@ -1126,8 +1225,12 @@ async def on_message(msg):
 					color=0x0000ff
 					)
 			embed.add_field(
-					name="----- 미예약보스 -----",
+					name="----- 미예약 보스 -----",
 					value= temp_bossTimeSTR1
+					)
+			embed.add_field(
+					name="----- 고 정 보 스 -----",
+					value= fixed_information
 					)
 			await client.send_message(client.get_channel(channel), embed=embed, tts=False)
 
