@@ -87,7 +87,8 @@ def init():
 	
 	global player
 	global voice_client1
-	
+	global voice_client2
+
 	global task1
 	
 	global channel_info
@@ -250,6 +251,8 @@ async def my_background_task():
 	
 	global player
 	global voice_client1
+        global voice_client2
+
 	
 	global task1
 	
@@ -302,7 +305,7 @@ async def my_background_task():
 							color=0x00ff00
 							)
 					await client.send_message(client.get_channel(channel), embed=embed, tts=False)
-					await PlaySound(voice_client1, './sound/' + fixed_bossData[i][0] + '젠.mp3')
+					await PlaySound(voice_client2, './sound/' + fixed_bossData[i][0] + '젠.mp3')
 
 				
 			for i in range(bossNum):
@@ -597,6 +600,7 @@ async def on_message(msg):
 	
 	global player
 	global voice_client1
+        global voice_client2
 	
 	global task1
 	
