@@ -251,7 +251,7 @@ async def my_background_task():
 	
 	global player
 	global voice_client1
-        global voice_client2
+	global voice_client2
 
 	
 	global task1
@@ -600,7 +600,7 @@ async def on_message(msg):
 	
 	global player
 	global voice_client1
-        global voice_client2
+	global voice_client2
 	
 	global task1
 	
