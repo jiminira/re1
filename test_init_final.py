@@ -48,7 +48,6 @@ channel_voice_name = []
 channel_voice_id = []
 channel_type = []
 
-
 client = discord.Client()
 
 access_token = os.environ["BOT_TOKEN"]			
