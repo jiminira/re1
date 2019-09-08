@@ -830,50 +830,71 @@ async def on_message(msg):
 					
 				tmp_msg = bossData[i][0] +'멍'
 				tmp_now = datetime.datetime.now() + datetime.timedelta(hours = int(basicSetting[0]))
-				if tmp_bossTime[i] != bossTime[i]:
-					bossMungCnt[i] = bossMungCnt[i] + 1
-				else :
-					bossMungCnt[i] = bossMungCnt[i]
-				
-				temptime = tmp_bossTime[i]
+
 				if len(hello) > len(tmp_msg) + 3 :
 					if hello.find(':') != -1 :
 						chkpos = hello.find(':')
-						hours1 = hello[chkpos-2:chkpos]
+						hours1 = hello[chkpos-2:chkpos] 
 						minutes1 = hello[chkpos+1:chkpos+3]					
-						tmp_now = tmp_now.replace(hour=int(hours1), minute=int(minutes1))
-						nextTime = tmp_now + datetime.timedelta(hours = int(bossData[i][1]), minutes = int(bossData[i][5]))
+						temptime = tmp_now.replace(hour=int(hours1), minute=int(minutes1))
 					else:
 						chkpos = len(hello)-2
 						hours1 = hello[chkpos-2:chkpos]
 						minutes1 = hello[chkpos:chkpos+2]					
-						tmp_now = tmp_now.replace(hour=int(hours1), minute=int(minutes1))
-						nextTime = tmp_now + datetime.timedelta(hours = int(bossData[i][1]), minutes = int(bossData[i][5]))			
-				else:
-					temptime = temptime.replace(year=int(tmp_now.year), day=int(tmp_now.day))
+						temptime = tmp_now.replace(hour=int(hours1), minute=int(minutes1))
+					
 					nextTime = temptime + datetime.timedelta(hours = int(bossData[i][1]), minutes = int(bossData[i][5]))
-				
-				bossFlag[i] = False
-				bossFlag0[i] = False
-				bossMungFlag[i] = False
-				bossMungCnt[i] = bossMungCnt[i] + 1
+					
+					bossMungCnt[i] = 0
+					bossFlag[i] = False
+					bossFlag0[i] = False
+					bossMungFlag[i] = False
+					bossMungCnt[i] = bossMungCnt[i] + 1
 
-				if nextTime < tmp_now : 
-					nextTime = nextTime + datetime.timedelta(days=int(1))
-				else :
-					nextTime = nextTime
+					if nextTime > tmp_now :
+						nextTime = nextTime + datetime.timedelta(days=int(-1))
 
-				
-				bossTime[i] = nextTime				
+					if nextTime < tmp_now :
+						deltaTime = datetime.timedelta(hours = int(bossData[i][1]), minutes = int(bossData[i][5]))
+						while tmp_now > nextTime :
+							nextTime = nextTime + deltaTime
+							bossMungCnt[i] = bossMungCnt[i] + 1
+					else :
+						nextTime = nextTime
 
-				tmp_bossTimeString[i] = bossTimeString[i] = nextTime.strftime('%H:%M:%S')
-				tmp_bossDateString[i] = bossDateString[i] = nextTime.strftime('%Y-%m-%d')
-				embed = discord.Embed(
-						description= '```다음 ' + bossData[i][0] + ' ' + bossTimeString[i] + '입니다.```',
-						color=0xff0000
-						)
-				await client.get_channel(channel).send(embed=embed, tts=False)
-				await dbSave()
+					tmp_bossTime[i] = bossTime[i] = nextTime				
+
+					tmp_bossTimeString[i] = bossTimeString[i] = nextTime.strftime('%H:%M:%S')
+					tmp_bossDateString[i] = bossDateString[i] = nextTime.strftime('%Y-%m-%d')
+					embed = discord.Embed(
+							description= '```다음 ' + bossData[i][0] + ' ' + bossTimeString[i] + '입니다.```',
+							color=0xff0000
+							)
+					await client.get_channel(channel).send(embed=embed, tts=False)
+					await dbSave()
+				else:
+					if tmp_bossTime[i] < tmp_now :
+
+						nextTime = tmp_bossTime[i] + datetime.timedelta(hours = int(bossData[i][1]), minutes = int(bossData[i][5]))
+
+						bossFlag[i] = False
+						bossFlag0[i] = False
+						bossMungFlag[i] = False
+						bossMungCnt[i] = bossMungCnt[i] + 1
+
+						tmp_bossTime[i] = bossTime[i] = nextTime				
+
+						tmp_bossTimeString[i] = bossTimeString[i] = nextTime.strftime('%H:%M:%S')
+						tmp_bossDateString[i] = bossDateString[i] = nextTime.strftime('%Y-%m-%d')
+						embed = discord.Embed(
+								description= '```다음 ' + bossData[i][0] + ' ' + bossTimeString[i] + '입니다.```',
+								color=0xff0000
+								)
+						await client.get_channel(channel).send(embed=embed, tts=False)
+						await dbSave()
+					else:
+						await client.get_channel(channel).send('```' + bossData[i][0] + '탐이 아직 안됐습니다. 다음 ' + bossData[i][0] + '탐 [' + tmp_bossTimeString[i] + '] 입니다```', tts=False)
+
 				
 		##################################
 
