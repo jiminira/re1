@@ -1224,8 +1224,7 @@ async def on_message(msg):
 		##################################
 		
 		if message.content.startswith('!ㅂ') or message.content.startswith('!q') or message.content.startswith('!ㅃ'):
-			await dbLoad()
-
+			
 			checkTime = datetime.datetime.now() + datetime.timedelta(days=1)
 
 			sorted_datelist = []
