@@ -1408,12 +1408,6 @@ while True:
 			################ 명존쎄 ################ 
 
 			if message.content == '!명치':
-				if basicSetting[2] != '0':
-					for i in range(bossNum):
-						if bossMungFlag[i] == True:
-							bossTimeString[i] = tmp_bossTime[i].strftime('%H:%M:%S')
-							bossDateString[i] = tmp_bossTime[i].strftime('%Y-%m-%d')
-				await dbSave()
 				await client.get_channel(channel).send( '<보탐봇 명치 맞고 숨 고르기 중! 잠시만요!>', tts=False)
 				print("명치!")
 				await voice_client1.disconnect()
