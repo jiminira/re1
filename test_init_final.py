@@ -1132,10 +1132,6 @@ while True:
 						contents = repo.get_contents("test_setting.ini")
 						repo.update_file(contents.path, "test_setting", result_voiceCH, contents.sha)
 
-					if task1.cancelled != False:
-						task1.cancel()
-						print ('task cancle')
-
 					await JointheVC(voice_channel, channel)
 					await client.get_channel(channel).send('< 음성채널 [' + client.get_channel(voice_channel.id).name + '] 접속완료>', tts=False)
 			
