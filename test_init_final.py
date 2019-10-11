@@ -286,6 +286,7 @@ async def task():
 		if voice_client1.is_connected() == False :
 			voice_client1 = await client.get_channel(basicSetting[6]).connect(reconnect=True)
 			if voice_client1.is_connected() :
+				await dbLoad()
 				await client.get_channel(channel).send( '<다시 왔습니다.!>', tts=False)
 			
 	while not client.is_closed():
@@ -1341,7 +1342,7 @@ while True:
 						datelist2.append(bossTime[i])
 
 				for i in range(fixed_bossNum):
-					if fixed_bossTime[i] < datetime.datetime.now() + datetime.timedelta(hours= 3):
+					if fixed_bossTime[i] < datetime.datetime.now() + datetime.timedelta(hours=int(basicSetting[0])+3):
 						datelist2.append(fixed_bossTime[i])
 
 				datelist = list(set(datelist2))
@@ -1544,6 +1545,14 @@ while True:
 			if message.content == '!명치':
 				await client.get_channel(channel).send( '<보탐봇 명치 맞고 숨 고르기 중! 잠시만요!>', tts=False)
 				print("명치!")
+				for i in range(bossNum):
+					if bossMungFlag[i] == True:
+						bossTimeString[i] = tmp_bossTime[i].strftime('%H:%M:%S')
+						bossDateString[i] = tmp_bossTime[i].strftime('%Y-%m-%d')
+						bossFlag[i] = False
+						bossFlag0[i] = False
+						bossMungFlag[i] = False
+				await dbSave()
 				await voice_client1.disconnect()
 				#client.clear()
 				raise SystemExit
